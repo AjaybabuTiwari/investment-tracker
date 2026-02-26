@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="theme-color" content="#1E3A5F"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="InvestTracker"/>
+  <link rel="manifest" href="/manifest.json"/>
+  <link rel="apple-touch-icon" href="https://img.icons8.com/color/192/000000/investment-portfolio.png"/>
+  <title>📈 Investment Tracker</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; background: #1E3A5F; }
+
+    /* Loading screen shown before iframe loads */
+    #loading {
+      position: fixed; inset: 0; background: #1E3A5F;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 16px; z-index: 10;
+      transition: opacity 0.4s;
+    }
+    #loading.hide { opacity: 0; pointer-events: none; }
+    .spin-icon { font-size: 52px; animation: bounce 0.8s infinite alternate; }
+    @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-10px); } }
+    .spinner {
+      width: 36px; height: 36px; border: 3px solid rgba(255,255,255,0.2);
+      border-top-color: #60A5FA; border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .load-text { color: #93C5FD; font-family: 'Segoe UI', sans-serif; font-size: 14px; font-weight: 600; }
+
+    /* Offline banner */
+    #offlineBanner {
+      display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: #92400e; color: #fff; text-align: center;
+      padding: 8px; font-family: 'Segoe UI', sans-serif; font-size: 13px; font-weight: 600;
+    }
+
+    /* The iframe fills entire screen */
+    #appFrame {
+      width: 100%; height: 100%; border: none;
+      display: block; background: #1E3A5F;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="offlineBanner">📵 You're offline — showing cached data</div>
+
+  <div id="loading">
+    <div class="spin-icon">📈</div>
+    <div class="spinner"></div>
+    <div class="load-text">Loading Investment Tracker...</div>
+  </div>
+
+  <iframe
+    id="appFrame"
+    src="https://script.google.com/macros/s/AKfycbwZZ0bSY3io2RQ1vU_y24EVsUB9A6fuOUIj2nyap-2Sy-fgR2BNgyZ6jKcwe7biCBmR/exec"
+    allow="notifications"
+    loading="eager">
+  </iframe>
+
+  <script>
+    // ── Register real service worker ──────────────────
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => {
+          console.log('✅ SW registered:', reg.scope);
+          // Ask for notification permission on first load
+          if (Notification.permission === 'default') {
+            setTimeout(() => Notification.requestPermission(), 3000);
+          }
+        })
+        .catch(err => console.log('SW error:', err));
+    }
+
+    // ── Hide loader when iframe loads ─────────────────
+    document.getElementById('appFrame').addEventListener('load', () => {
+      setTimeout(() => {
+        document.getElementById('loading').classList.add('hide');
+      }, 800);
+    });
+
+    // ── Offline detection ─────────────────────────────
+    function updateOnlineStatus() {
+      document.getElementById('offlineBanner').style.display =
+        navigator.onLine ? 'none' : 'block';
+    }
+    window.addEventListener('online',  updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    updateOnlineStatus();
+
+    // ── Handle page shortcuts (?page=add etc) ─────────
+    const urlParams = new URLSearchParams(window.location.search);
+    const page = urlParams.get('page');
+    if (page) {
+      const baseUrl = 'https://script.google.com/macros/s/AKfycbwZZ0bSY3io2RQ1vU_y24EVsUB9A6fuOUIj2nyap-2Sy-fgR2BNgyZ6jKcwe7biCBmR/exec';
+      document.getElementById('appFrame').src = baseUrl + '?page=' + page;
+    }
+  </script>
+</body>
+</html>
