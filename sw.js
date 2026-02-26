@@ -1,46 +1,57 @@
-// Investment Tracker — Service Worker
-const CACHE = 'inv-tracker-v1';
-const APP_URL = 'https://script.google.com/macros/s/AKfycbwZZ0bSY3io2RQ1vU_y24EVsUB9A6fuOUIj2nyap-2Sy-fgR2BNgyZ6jKcwe7biCBmR/exec';
+// ── Investment Tracker Service Worker ─────────────────
+const CACHE_NAME = 'inv-tracker-v2';
+const BASE = 'https://ajaybabutiwari.github.io/investment-tracker/';
 
-// ── INSTALL ──────────────────────────────────────────
-self.addEventListener('install', e => {
+const PRECACHE = [
+  BASE,
+  BASE + 'manifest.json',
+];
+
+// INSTALL — cache shell files
+self.addEventListener('install', function(e) {
   e.waitUntil(
-    caches.open(CACHE).then(cache => {
-      return cache.addAll([
-        '/',
-        '/manifest.json',
-      ]);
+    caches.open(CACHE_NAME).then(function(cache) {
+      return cache.addAll(PRECACHE);
+    }).then(function() {
+      return self.skipWaiting();
     })
   );
-  self.skipWaiting();
 });
 
-// ── ACTIVATE ─────────────────────────────────────────
-self.addEventListener('activate', e => {
+// ACTIVATE — remove old caches
+self.addEventListener('activate', function(e) {
   e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    )
+    caches.keys().then(function(keys) {
+      return Promise.all(
+        keys.filter(function(k) { return k !== CACHE_NAME; })
+            .map(function(k) { return caches.delete(k); })
+      );
+    }).then(function() {
+      return self.clients.claim();
+    })
   );
-  self.clients.claim();
 });
 
-// ── FETCH — serve shell from cache, app from network ─
-self.addEventListener('fetch', e => {
+// FETCH — serve from cache, fall back to network
+self.addEventListener('fetch', function(e) {
   if (e.request.mode === 'navigate') {
     e.respondWith(
-      fetch(e.request).catch(() => caches.match('/'))
+      fetch(e.request).catch(function() {
+        return caches.match(BASE);
+      })
     );
     return;
   }
   e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request))
+    caches.match(e.request).then(function(cached) {
+      return cached || fetch(e.request);
+    })
   );
 });
 
-// ── PUSH NOTIFICATIONS ────────────────────────────────
-self.addEventListener('push', e => {
-  const data = e.data ? e.data.json() : {};
+// PUSH NOTIFICATIONS
+self.addEventListener('push', function(e) {
+  var data = e.data ? e.data.json() : {};
   e.waitUntil(
     self.registration.showNotification(data.title || '📈 Investment Tracker', {
       body: data.body || 'Check your investments',
@@ -53,22 +64,15 @@ self.addEventListener('push', e => {
   );
 });
 
-// ── NOTIFICATION CLICK ────────────────────────────────
-self.addEventListener('notificationclick', e => {
+// NOTIFICATION CLICK — open app
+self.addEventListener('notificationclick', function(e) {
   e.notification.close();
-  e.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
-      for (const client of list) {
-        if (client.url.includes('inv') && 'focus' in client) return client.focus();
-      }
-      if (clients.openWindow) return clients.openWindow('/');
-    })
-  );
+  e.waitUntil(clients.openWindow(BASE));
 });
 
-// ── BACKGROUND SYNC ───────────────────────────────────
-self.addEventListener('sync', e => {
+// BACKGROUND SYNC
+self.addEventListener('sync', function(e) {
   if (e.tag === 'sync-investments') {
-    console.log('Background sync triggered');
+    console.log('Background sync: investments');
   }
 });
