@@ -8,100 +8,87 @@
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="apple-mobile-web-app-title" content="InvestTracker"/>
-  <meta name="application-name" content="InvestTracker"/>
   <meta name="description" content="Personal investment tracker for Ajay Babu and Sachi"/>
-
-  <!-- ✅ Manifest — full absolute path for GitHub Pages subfolder -->
   <link rel="manifest" href="https://ajaybabutiwari.github.io/investment-tracker/manifest.json"/>
   <link rel="apple-touch-icon" href="https://img.icons8.com/color/192/000000/investment-portfolio.png"/>
-
   <title>📈 Investment Tracker</title>
 
-  <!-- ✅ Register SW immediately — inline, synchronous, no conditions -->
+  <!-- Register Service Worker FIRST before redirect -->
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function() {
-        navigator.serviceWorker.register(
-          'https://ajaybabutiwari.github.io/investment-tracker/sw.js',
-          { scope: 'https://ajaybabutiwari.github.io/investment-tracker/' }
-        ).then(function(reg) {
-          console.log('SW registered:', reg.scope);
-        }).catch(function(err) {
-          console.log('SW error:', err);
-        });
+      navigator.serviceWorker.register(
+        'https://ajaybabutiwari.github.io/investment-tracker/sw.js',
+        { scope: 'https://ajaybabutiwari.github.io/investment-tracker/' }
+      ).then(function(reg) {
+        console.log('SW registered:', reg.scope);
+      }).catch(function(err) {
+        console.log('SW error:', err);
       });
     }
   </script>
 
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { height: 100%; overflow: hidden; background: #1E3A5F; }
-    #loading {
-      position: fixed; inset: 0; background: #1E3A5F;
-      display: flex; flex-direction: column; align-items: center;
-      justify-content: center; gap: 16px; z-index: 10; transition: opacity 0.5s;
+    html, body {
+      height: 100%; background: #1E3A5F;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      display: flex; align-items: center; justify-content: center;
     }
-    #loading.hide { opacity: 0; pointer-events: none; }
-    .icon { font-size: 56px; animation: bounce 0.9s infinite alternate; }
-    @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-12px); } }
+    .wrap {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 18px; text-align: center; padding: 32px;
+    }
+    .icon { font-size: 60px; animation: bounce 0.9s infinite alternate; }
+    @keyframes bounce {
+      from { transform: translateY(0); }
+      to   { transform: translateY(-12px); }
+    }
     .spinner {
-      width: 38px; height: 38px;
+      width: 40px; height: 40px;
       border: 3px solid rgba(255,255,255,0.15);
       border-top-color: #60A5FA;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .txt { color: #93C5FD; font-family: 'Segoe UI', sans-serif; font-size: 14px; font-weight: 600; }
-    .sub { color: #60A5FA; font-family: 'Segoe UI', sans-serif; font-size: 11px; }
-    #offline {
-      display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-      background: #92400e; color: #fff; text-align: center;
-      padding: 9px; font-family: 'Segoe UI', sans-serif; font-size: 13px; font-weight: 600;
+    .title  { color: #fff;    font-size: 20px; font-weight: 800; }
+    .sub    { color: #93C5FD; font-size: 13px; }
+    .small  { color: #60A5FA; font-size: 11px; margin-top: -8px; }
+    .btn {
+      margin-top: 8px; padding: 12px 28px;
+      background: rgba(255,255,255,0.15);
+      color: #fff; border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 10px; font-size: 14px; font-weight: 700;
+      cursor: pointer; font-family: inherit; text-decoration: none;
+      display: inline-block;
     }
-    #appFrame { width: 100%; height: 100%; border: none; display: block; }
+    .btn:hover { background: rgba(255,255,255,0.25); }
   </style>
 </head>
 <body>
-
-  <div id="offline">📵 You are offline — showing cached version</div>
-
-  <div id="loading">
+  <div class="wrap">
     <div class="icon">📈</div>
     <div class="spinner"></div>
-    <div class="txt">Investment Tracker</div>
+    <div class="title">Investment Tracker</div>
     <div class="sub">Ajay Babu & Sachi</div>
+    <div class="small">Redirecting to your dashboard...</div>
+    <a class="btn" id="openBtn"
+       href="https://script.google.com/macros/s/AKfycbwZZ0bSY3io2RQ1vU_y24EVsUB9A6fuOUIj2nyap-2Sy-fgR2BNgyZ6jKcwe7biCBmR/exec">
+      Open App →
+    </a>
   </div>
 
-  <iframe
-    id="appFrame"
-    src="https://script.google.com/macros/s/AKfycbwZZ0bSY3io2RQ1vU_y24EVsUB9A6fuOUIj2nyap-2Sy-fgR2BNgyZ6jKcwe7biCBmR/exec"
-    allow="notifications; camera; microphone"
-    loading="eager">
-  </iframe>
-
   <script>
-    // Hide loader when iframe finishes loading
-    document.getElementById('appFrame').addEventListener('load', function() {
-      setTimeout(function() {
-        document.getElementById('loading').classList.add('hide');
-      }, 600);
-    });
+    var APP = 'https://script.google.com/macros/s/AKfycbwZZ0bSY3io2RQ1vU_y24EVsUB9A6fuOUIj2nyap-2Sy-fgR2BNgyZ6jKcwe7biCBmR/exec';
 
-    // Offline banner
-    function checkOnline() {
-      document.getElementById('offline').style.display = navigator.onLine ? 'none' : 'block';
-    }
-    window.addEventListener('online', checkOnline);
-    window.addEventListener('offline', checkOnline);
-    checkOnline();
-
-    // Handle shortcut deep links (?page=add / ?page=alerts)
+    // Handle deep link shortcuts (?page=add / ?page=alerts)
     var page = new URLSearchParams(window.location.search).get('page');
-    if (page) {
-      var base = 'https://script.google.com/macros/s/AKfycbwZZ0bSY3io2RQ1vU_y24EVsUB9A6fuOUIj2nyap-2Sy-fgR2BNgyZ6jKcwe7biCBmR/exec';
-      document.getElementById('appFrame').src = base + '?page=' + page;
-    }
+    if (page) APP = APP + '?page=' + page;
+
+    // Auto-redirect after 1.5 seconds (gives SW time to register)
+    setTimeout(function() {
+      window.location.replace(APP);
+    }, 1500);
   </script>
 </body>
 </html>
