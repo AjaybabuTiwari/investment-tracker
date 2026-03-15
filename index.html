@@ -562,20 +562,26 @@ function onGoogleSignIn(credential){
   var pl=JSON.parse(atob(credential.credential.split('.')[1]));
   USER={email:pl.email, name:pl.name||pl.email.split("@")[0], picture:pl.picture||null};
 
-  // Request access token for Sheets API (no popup if already signed in)
+  // Request access token for Sheets API
   var tc=google.accounts.oauth2.initTokenClient({
     client_id: CLIENT_ID,
     scope: "https://www.googleapis.com/auth/spreadsheets",
     hint: USER.email,
     callback: function(tr){
-      if(tr.error){showToast("Token error: "+tr.error,"err");return;}
+      if(tr.error){
+        if(tr.error==="interaction_required"||tr.error==="consent_required"||tr.error==="access_denied"){
+          tc.requestAccessToken({prompt:"consent"});
+        } else {
+          showToast("Sign-in error: "+tr.error,"err");
+        }
+        return;
+      }
       USER.token=tr.access_token;
-      // Schedule token refresh before expiry (~55 min)
       setTimeout(refreshToken, 55*60*1000);
       afterLogin();
     }
   });
-  tc.requestAccessToken({prompt:""});
+  tc.requestAccessToken({prompt:"none"});
 }
 
 function refreshToken(){
